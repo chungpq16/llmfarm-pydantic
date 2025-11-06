@@ -24,13 +24,14 @@ class LLMFarmPydantic:
         # Log the configuration
         self.logger.info(f"Initializing LLM Farm with model: {model}")
         
-        # Include the API version in the base URL as shown in the curl command
-        base_url = "https://aoai-farm.bosch-temp.com/api/openai/deployments/askbosch-prod-farm-openai-gpt-4o-mini-2024-07-18/chat/completions?api-version=2024-08-01-preview"
+        # CORRECTED: Don't include /chat/completions in base_url since OpenAI client adds it automatically
+        # But DO include the api-version query parameter
+        base_url = "https://aoai-farm.bosch-temp.com/api/openai/deployments/askbosch-prod-farm-openai-gpt-4o-mini-2024-07-18?api-version=2024-08-01-preview"
         
         # Include both required headers from the curl command
         headers = {
             "genaiplatform-farm-subscription-key": "my-farm-key",
-            "Authorization": "Bearer secrets"  # Adding the Authorization header
+            "Content-Type": "application/json"
         }
         
         self.logger.info(f"Base URL: {base_url}")
@@ -39,7 +40,7 @@ class LLMFarmPydantic:
         # Create AsyncOpenAI client
         try:
             client = AsyncOpenAI(
-                api_key="secrets",  # Use actual API key instead of dummy
+                api_key="secrets",  # Use the Bearer token value
                 base_url=base_url,
                 default_headers=headers
             )
@@ -111,46 +112,9 @@ class LLMFarmPydantic:
                 self.logger.error(f"Model Name: {e.model_name}")
                 
             raise
-    
-    async def completion_async(self, usertext, sysprompt="You are a helpful assistant"):
-        """
-        Async version of completion
-        """
-        self.logger.info(f"Starting async completion - User text: {usertext[:100]}...")
-        self.logger.info(f"System prompt: {sysprompt}")
-        
-        try:
-            if sysprompt != "You are a helpful assistant":
-                agent_with_prompt = Agent(
-                    self.model_instance, 
-                    system_prompt=sysprompt
-                )
-                self.logger.info("Created agent with custom system prompt")
-                result = await agent_with_prompt.run(usertext)
-            else:
-                self.logger.info("Using default agent")
-                result = await self.agent.run(usertext)
-            
-            self.logger.info("Async completion successful")
-            self.logger.debug(f"Result: {result.output}")
-            return result.output
-            
-        except Exception as e:
-            self.logger.error(f"Async completion failed: {e}")
-            self.logger.error(f"Exception type: {type(e)}")
-            
-            # Log additional debug info for HTTP errors
-            if hasattr(e, 'status_code'):
-                self.logger.error(f"HTTP Status Code: {e.status_code}")
-            if hasattr(e, 'body'):
-                self.logger.error(f"Response Body: {e.body}")
-            if hasattr(e, 'model_name'):
-                self.logger.error(f"Model Name: {e.model_name}")
-                
-            raise
 
 if __name__ == "__main__":
-    print("=== LLM Farm PydanticAI Debug Test ===")
+    print("=== LLM Farm PydanticAI Debug Test (Corrected Version) ===")
     
     try:
         # Create instance
@@ -159,7 +123,7 @@ if __name__ == "__main__":
         print("LLM Farm instance created successfully")
         
         # Test completion
-        prompt = "Tell me about Bosch group"
+        prompt = "test"  # Using same simple prompt as in curl command
         print(f"\nTesting completion with prompt: {prompt}")
         response = llm_farm.completion(prompt, "You are a helpful assistant")
         print(f"Response: {response}")
