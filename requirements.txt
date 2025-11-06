@@ -10,6 +10,8 @@ httpx>=0.25.0
 # Async support
 asyncio
 
-# Optional: For better performance and additional features
+# Logging and debugging
+rich>=13.0.0
+
+# Optional: For better performance
 # uvloop>=0.19.0  # Uncomment for faster async performance on Linux/macOS
-# rich>=13.0.0    # Uncomment for better console output formatting
