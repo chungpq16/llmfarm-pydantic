@@ -12,7 +12,7 @@ long_description = (this_directory / "README.md").read_text()
 
 setup(
     name="llmfarm-pydantic",
-    version="0.1.1",
+    version="0.1.2",
     description="Pydantic AI integration for Bosch Corporate LLM Farm",
     long_description=long_description,
     long_description_content_type="text/markdown",

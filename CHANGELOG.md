@@ -5,6 +5,24 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.2] - 2024-12-19
+
+### Added
+- **NEW**: Simple direct interface (`BoschFarmLLM`) for easy usage without Pydantic AI
+- Backward compatibility alias (`llmfarminf`) matching your original code structure
+- Convenience methods: `ask()`, `chat()`, and `_completion()`
+- Comprehensive URL construction handling for Azure OpenAI deployments
+
+### Fixed
+- **CRITICAL**: Fixed URL construction in simple interface to use proper Azure deployment paths
+- Simple interface now correctly calls `/deployments/{deployment}/chat/completions`
+- Proper deployment name extraction from configured URLs
+
+### Technical Details
+- Added `BoschFarmLLM` class in `src/bosch_farm_simple.py`
+- Automatic URL parsing and deployment name extraction
+- Compatible with various URL formats (full deployment URL, API root, trailing slashes)
+
 ## [0.1.1] - 2024-12-19
 
 ### Fixed

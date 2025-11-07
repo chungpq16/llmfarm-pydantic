@@ -34,7 +34,7 @@ class BoschFarmLLM:
         """
         # Get configuration from environment if not provided
         self.farm_api_key = farm_api_key or os.getenv("BOSCH_FARM_API_KEY")
-        self.base_url = base_url or os.getenv(
+        configured_base_url = base_url or os.getenv(
             "BOSCH_FARM_BASE_URL",
             "https://aoai-farm.bosch-temp.com/api/openai/deployments/askbosch-prod-farm-openai-gpt-4o-mini-2024-07-18"
         )
@@ -47,6 +47,10 @@ class BoschFarmLLM:
                 "BOSCH_FARM_API_KEY is required. "
                 "Set it as an environment variable or pass farm_api_key parameter."
             )
+        
+        # Extract deployment name and construct proper base URL for Azure OpenAI
+        self.deployment_name = self._extract_deployment_name(configured_base_url)
+        self.base_url = self._construct_base_url(configured_base_url)
         
         # Create OpenAI client with Bosch Farm configuration
         self.client = OpenAI(
@@ -109,6 +113,59 @@ class BoschFarmLLM:
             The LLM's answer
         """
         return self._completion(question, "You are a helpful assistant")
+    
+    def _extract_deployment_name(self, url: str) -> str:
+        """
+        Extract deployment name from Azure OpenAI URL.
+        
+        Args:
+            url: Full deployment URL or API root URL
+            
+        Returns:
+            The deployment name
+        """
+        try:
+            if "/deployments/" in url:
+                # Extract from URL like: https://aoai-farm.bosch-temp.com/api/openai/deployments/DEPLOYMENT_NAME/...
+                parts = url.split("/deployments/", 1)[1]
+                deployment_name = parts.split("/", 1)[0]
+                return deployment_name
+        except (IndexError, ValueError):
+            pass
+        
+        # Fallback to model name if URL parsing fails
+        return self.model
+    
+    def _construct_base_url(self, configured_url: str) -> str:
+        """
+        Construct the correct base URL for Azure OpenAI.
+        
+        The OpenAI client will append /chat/completions, so we need to provide
+        the full path up to the deployment: /deployments/{deployment}
+        
+        Args:
+            configured_url: The configured base URL (could be API root or full deployment URL)
+            
+        Returns:
+            Proper base URL for the OpenAI client
+        """
+        try:
+            if "/deployments/" in configured_url:
+                # URL already contains deployment path
+                # Extract everything up to and including the deployment name
+                before_deployments, after_deployments = configured_url.split("/deployments/", 1)
+                deployment_name = after_deployments.split("/", 1)[0]
+                
+                # Construct: https://aoai-farm.bosch-temp.com/api/openai/deployments/DEPLOYMENT_NAME
+                base_url = f"{before_deployments}/deployments/{deployment_name}"
+                return base_url.rstrip('/')
+            else:
+                # URL is just the API root, append deployment path
+                api_root = configured_url.rstrip('/')
+                return f"{api_root}/deployments/{self.deployment_name}"
+        except Exception:
+            # Fallback: assume the URL is correct as-is
+            return configured_url.rstrip('/')
 
 
 # Alias for the original naming convention
