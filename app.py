@@ -18,18 +18,21 @@ class LLMFarmAgent:
         logger.info(f"Initializing LLM Farm Agent with model: {model}")
         
         # Configure AsyncOpenAI client for LLM Farm
+        # Note: base_url should NOT include deployment path - OpenAI SDK will append /chat/completions
         self.client = AsyncOpenAI(
             base_url="https://aoai-farm.bosch-temp.com/api/openai/deployments/askbosch-prod-farm-openai-gpt-4o-mini-2024-07-18",
             api_key="dummy",  # LLM Farm doesn't use standard API key
             default_headers={
                 "genaiplatform-farm-subscription-key": api_key
             },
+            default_query={"api-version": "2024-08-01-preview"}
         )
-        logger.info("AsyncOpenAI client configured successfully")
+        logger.info(f"AsyncOpenAI client configured with base_url: {self.client.base_url}")
         
         # Wrap in PydanticAI OpenAI model
+        # Use empty model_name since it's already in the base_url
         self.model = OpenAIModel(
-            model_name=model,
+            model_name="",  # Empty because deployment is in base_url
             provider=OpenAIProvider(openai_client=self.client),
         )
         logger.info("OpenAIModel provider created")
