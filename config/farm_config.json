@@ -1,0 +1,23 @@
+{
+  "bosch_farm": {
+    "api_version": "2024-08-01-preview",
+    "default_model": "gpt-4o-mini",
+    "timeout": 30,
+    "max_retries": 3
+  },
+  
+  "environments": {
+    "development": {
+      "bosch_farm": {
+        "timeout": 60,
+        "max_retries": 1
+      }
+    },
+    "production": {
+      "bosch_farm": {
+        "timeout": 30,
+        "max_retries": 5
+      }
+    }
+  }
+}
