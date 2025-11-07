@@ -222,23 +222,49 @@ class BoschFarmProvider(Provider[AsyncOpenAI]):
                 )
         
         # Create AsyncOpenAI client
-        # For Azure OpenAI, we need to ensure the base_url includes the chat/completions endpoint
-        base_url = self.config.base_url
-        if not base_url.endswith('/chat/completions'):
-            # Azure OpenAI deployment URLs need /chat/completions suffix
-            if base_url.endswith('/'):
-                base_url = base_url.rstrip('/')
-            base_url = f"{base_url}/chat/completions"
-        
+        # For Azure OpenAI style endpoints we should set the client's base_url to the
+        # API root (e.g. https://.../api/openai) and let the client construct
+        # the deployment-specific path: /deployments/{deployment}/chat/completions
+        # If the configured base_url already contains the deployment path, extract
+        # the deployment name and compute the API root.
+        full_url = (self.config.base_url or "").strip()
+        deployment_name = None
+        api_root = full_url
+
+        try:
+            if "/deployments/" in full_url:
+                # Split at the deployments segment and extract the deployment name
+                before, after = full_url.split("/deployments/", 1)
+                deployment_name = after.split("/", 1)[0]
+                api_root = before.rstrip('/')
+
+            # Ensure api_root includes the /api/openai prefix if present in the original URL
+            if "/api/openai" in full_url and not api_root.endswith('/api/openai'):
+                api_root = full_url.split('/api/openai', 1)[0] + '/api/openai'
+
+            # Fallback: remove any trailing slash
+            api_root = api_root.rstrip('/')
+        except Exception:
+            # In case of unexpected URL formats, fall back to the configured value
+            api_root = (self.config.base_url or "").rstrip('/')
+
+        # Remember the deployment name on the provider for callers that need it
+        self._deployment_name = deployment_name or self.config.default_model
+
+        # Instantiate the AsyncOpenAI client pointing at the API root. Authentication
+        # for Bosch Farm is done via custom headers (genaiplatform-farm-subscription-key).
         self._client = AsyncOpenAI(
-            api_key="dummy",  # Required by OpenAI client, but auth is via headers
-            base_url=base_url,
+            api_key="dummy",  # OpenAI client expects an api_key param but we use headers
+            base_url=api_root,
             default_headers=headers,
             http_client=http_client,
-            max_retries=self.config.max_retries
+            max_retries=self.config.max_retries,
         )
-        
-        logger.debug(f"Created AsyncOpenAI client for Bosch Farm with base_url: {base_url}")
+
+        logger.debug(
+            f"Created AsyncOpenAI client for Bosch Farm with api_root: {api_root}, "
+            f"deployment: {self._deployment_name}"
+        )
     
     def __repr__(self) -> str:
         """String representation of the provider."""
