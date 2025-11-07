@@ -3,18 +3,18 @@ import logging
 import httpx
 from openai import AsyncOpenAI
 from pydantic_ai import Agent
-from pydantic_ai.models.openai import OpenAIModel
+from pydantic_ai.models.openai import OpenAIChatModel
 from pydantic_ai.providers.openai import OpenAIProvider
 
 # Configure logging
 logging.basicConfig(
-    level=logging.DEBUG,  # Set to DEBUG to see all details
+    level=logging.INFO,  # Set to DEBUG for troubleshooting
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
 
-# Enable httpx debug logging to see raw HTTP requests
-logging.getLogger("httpx").setLevel(logging.DEBUG)
+# Enable httpx debug logging only when needed
+# logging.getLogger("httpx").setLevel(logging.DEBUG)
 
 
 async def log_request(request: httpx.Request):
@@ -35,7 +35,8 @@ async def log_response(response: httpx.Response):
     logger.debug("HTTP RESPONSE:")
     logger.debug(f"Status: {response.status_code} {response.reason_phrase}")
     logger.debug(f"Headers: {dict(response.headers)}")
-    logger.debug(f"Body: {response.text[:1000]}")
+    # Note: Can't access response.text here as it's streaming
+    # The body will be consumed by the OpenAI client
     logger.debug("=" * 80)
 
 
@@ -67,11 +68,11 @@ class LLMFarmAgent:
         
         # Wrap in PydanticAI OpenAI model
         # Use the model name - it won't be added to URL since deployment is already in base_url
-        self.model = OpenAIModel(
+        self.model = OpenAIChatModel(
             model_name=model,
             provider=OpenAIProvider(openai_client=self.client),
         )
-        logger.info("OpenAIModel provider created")
+        logger.info("OpenAIChatModel provider created")
         
         # Create agent
         self.agent = Agent(
@@ -84,27 +85,15 @@ class LLMFarmAgent:
         """Run the agent with a prompt"""
         logger.info(f"Running agent with prompt: {prompt[:50]}...")
         
-        # Log configuration details
-        logger.debug("=" * 80)
-        logger.debug("CONFIGURATION:")
-        logger.debug(f"Base URL: {self.client.base_url}")
-        logger.debug(f"Default Headers: {self.client.default_headers}")
-        logger.debug(f"Default Query: {getattr(self.client, 'default_query', 'Not set')}")
-        logger.debug(f"Model Name (in PydanticAI): {self.model.model_name}")
-        logger.debug("=" * 80)
-        
         try:
             result = await self.agent.run(prompt)
-            logger.info("Agent execution completed successfully")
-            logger.debug(f"Result type: {type(result)}")
-            logger.debug(f"Result data: {result.data}")
+            logger.info(f"✓ Agent completed successfully, response length: {len(result.data) if result.data else 0}")
             return result.data
         except Exception as e:
             logger.error("=" * 80)
             logger.error("ERROR DETAILS:")
             logger.error(f"Error type: {type(e).__name__}")
             logger.error(f"Error message: {str(e)}")
-            logger.error(f"Full error: {repr(e)}")
             logger.error("=" * 80)
             logger.error(f"Error during agent execution: {str(e)}", exc_info=True)
             raise
