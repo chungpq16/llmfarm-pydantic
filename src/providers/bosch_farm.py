@@ -196,15 +196,23 @@ class BoschFarmProvider(Provider[AsyncOpenAI]):
                 )
         
         # Create AsyncOpenAI client
+        # For Azure OpenAI, we need to ensure the base_url includes the chat/completions endpoint
+        base_url = self.config.base_url
+        if not base_url.endswith('/chat/completions'):
+            # Azure OpenAI deployment URLs need /chat/completions suffix
+            if base_url.endswith('/'):
+                base_url = base_url.rstrip('/')
+            base_url = f"{base_url}/chat/completions"
+        
         self._client = AsyncOpenAI(
             api_key="dummy",  # Required by OpenAI client, but auth is via headers
-            base_url=self.config.base_url,
+            base_url=base_url,
             default_headers=headers,
             http_client=http_client,
             max_retries=self.config.max_retries
         )
         
-        logger.debug(f"Created AsyncOpenAI client for Bosch Farm")
+        logger.debug(f"Created AsyncOpenAI client for Bosch Farm with base_url: {base_url}")
     
     def __repr__(self) -> str:
         """String representation of the provider."""

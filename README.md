@@ -376,6 +376,12 @@ This project is licensed under the MIT License - see the LICENSE file for detail
 **"Import pydantic_ai could not be resolved"**
 - Install pydantic-ai: `pip install pydantic-ai`
 
+**404 "Resource not found" errors**
+- ✅ **Fixed in v1.1**: Provider now automatically constructs correct URLs
+- The provider automatically appends `/chat/completions` to your base URL
+- Your base URL should be: `https://aoai-farm.bosch-temp.com/api/openai/deployments/your-deployment-name`
+- Final URL will be: `https://aoai-farm.bosch-temp.com/api/openai/deployments/your-deployment-name/chat/completions`
+
 **Connection timeouts**
 - Increase timeout in config: `timeout: 60` 
 - Check network connectivity to Bosch Farm

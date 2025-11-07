@@ -22,6 +22,12 @@ Usage:
 """
 
 from .providers.bosch_farm import BoschFarmProvider, create_bosch_farm_provider
+from .config.settings import BoschFarmConfig
+
+__version__ = "0.1.0"
+__all__ = ["BoschFarmProvider", "BoschFarmConfig", "create_bosch_farm_provider"]
+
+from .providers.bosch_farm import BoschFarmProvider, create_bosch_farm_provider
 from .config.settings import BoschFarmConfig, load_config, get_global_config
 
 __version__ = "0.1.0"
