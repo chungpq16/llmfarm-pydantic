@@ -48,7 +48,15 @@ except ImportError:
         """Mock cached client for development."""
         return httpx.AsyncClient()
 
-from ..config.settings import BoschFarmConfig, load_config
+# Handle both relative and absolute imports
+try:
+    from ..config.settings import BoschFarmConfig, load_config
+except ImportError:
+    # Fallback for direct execution
+    import sys
+    from pathlib import Path
+    sys.path.insert(0, str(Path(__file__).parent.parent))
+    from config.settings import BoschFarmConfig, load_config
 
 logger = logging.getLogger(__name__)
 
