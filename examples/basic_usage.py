@@ -11,7 +11,8 @@ from pathlib import Path
 import sys
 
 # Add the src directory to the Python path for imports
-sys.path.insert(0, str(Path(__file__).parent.parent / "src"))
+src_path = Path(__file__).parent.parent / "src"
+sys.path.insert(0, str(src_path))
 
 # Import Pydantic AI components
 try:
@@ -22,8 +23,13 @@ except ImportError:
     PYDANTIC_AI_AVAILABLE = False
     print("Warning: pydantic-ai not installed. This example shows the code structure but won't run.")
 
-# Import our Bosch Farm provider
-from llmfarm_pydantic import BoschFarmProvider, create_bosch_farm_provider
+# Import our Bosch Farm provider (direct imports to avoid package issues)
+try:
+    from providers.bosch_farm import BoschFarmProvider, create_bosch_farm_provider
+except ImportError:
+    # Fallback for when running from project root
+    sys.path.insert(0, str(src_path))
+    from providers.bosch_farm import BoschFarmProvider, create_bosch_farm_provider
 
 
 def setup_environment_variables():
