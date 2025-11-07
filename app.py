@@ -1,5 +1,6 @@
 import asyncio
 import logging
+import httpx
 from openai import AsyncOpenAI
 from pydantic_ai import Agent
 from pydantic_ai.models.openai import OpenAIModel
@@ -7,10 +8,36 @@ from pydantic_ai.providers.openai import OpenAIProvider
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,  # Set to DEBUG to see all details
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+# Enable httpx debug logging to see raw HTTP requests
+logging.getLogger("httpx").setLevel(logging.DEBUG)
+
+
+async def log_request(request: httpx.Request):
+    """Log HTTP request details"""
+    logger.debug("=" * 80)
+    logger.debug("HTTP REQUEST:")
+    logger.debug(f"Method: {request.method}")
+    logger.debug(f"URL: {request.url}")
+    logger.debug(f"Headers: {dict(request.headers)}")
+    if request.content:
+        logger.debug(f"Body: {request.content.decode('utf-8', errors='ignore')[:1000]}")
+    logger.debug("=" * 80)
+
+
+async def log_response(response: httpx.Response):
+    """Log HTTP response details"""
+    logger.debug("=" * 80)
+    logger.debug("HTTP RESPONSE:")
+    logger.debug(f"Status: {response.status_code} {response.reason_phrase}")
+    logger.debug(f"Headers: {dict(response.headers)}")
+    logger.debug(f"Body: {response.text[:1000]}")
+    logger.debug("=" * 80)
+
 
 class LLMFarmAgent:
     def __init__(self, api_key: str, model: str = "gpt-4o-mini"):
@@ -19,13 +46,21 @@ class LLMFarmAgent:
         
         # Configure AsyncOpenAI client for LLM Farm
         # Note: base_url should NOT include deployment path - OpenAI SDK will append /chat/completions
+        http_client = httpx.AsyncClient(
+            event_hooks={
+                'request': [log_request],
+                'response': [log_response]
+            }
+        )
+        
         self.client = AsyncOpenAI(
             base_url="https://aoai-farm.bosch-temp.com/api/openai/deployments/askbosch-prod-farm-openai-gpt-4o-mini-2024-07-18",
             api_key="dummy",  # LLM Farm doesn't use standard API key
             default_headers={
                 "genaiplatform-farm-subscription-key": api_key
             },
-            default_query={"api-version": "2024-08-01-preview"}
+            default_query={"api-version": "2024-08-01-preview"},
+            http_client=http_client
         )
         logger.info(f"AsyncOpenAI client configured with base_url: {self.client.base_url}")
         
@@ -47,12 +82,29 @@ class LLMFarmAgent:
     async def run(self, prompt: str) -> str:
         """Run the agent with a prompt"""
         logger.info(f"Running agent with prompt: {prompt[:50]}...")
+        
+        # Log configuration details
+        logger.debug("=" * 80)
+        logger.debug("CONFIGURATION:")
+        logger.debug(f"Base URL: {self.client.base_url}")
+        logger.debug(f"Default Headers: {self.client.default_headers}")
+        logger.debug(f"Default Query: {getattr(self.client, 'default_query', 'Not set')}")
+        logger.debug(f"Model Name (in PydanticAI): {self.model.model_name}")
+        logger.debug("=" * 80)
+        
         try:
             result = await self.agent.run(prompt)
             logger.info("Agent execution completed successfully")
             logger.debug(f"Result type: {type(result)}")
+            logger.debug(f"Result data: {result.data}")
             return result.data
         except Exception as e:
+            logger.error("=" * 80)
+            logger.error("ERROR DETAILS:")
+            logger.error(f"Error type: {type(e).__name__}")
+            logger.error(f"Error message: {str(e)}")
+            logger.error(f"Full error: {repr(e)}")
+            logger.error("=" * 80)
             logger.error(f"Error during agent execution: {str(e)}", exc_info=True)
             raise
     
