@@ -1,17 +1,11 @@
-# Core PydanticAI dependencies
-pydantic-ai[openai]>=0.0.13
+# Production Bosch LLM Farm Client
+# Core dependencies only - clean and minimal
 
-# OpenAI client (required for PydanticAI OpenAI provider)
+# OpenAI client for API communication
 openai>=1.45.0
 
 # HTTP client (used by OpenAI client)
 httpx>=0.25.0
 
-# Async support
-asyncio
-
-# Logging and debugging
-rich>=13.0.0
-
 # Optional: For better performance
-# uvloop>=0.19.0  # Uncomment for faster async performance on Linux/macOS
+# uvloop>=0.19.0  # Uncomment for faster async on Linux/macOS
