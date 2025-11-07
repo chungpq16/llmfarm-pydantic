@@ -87,8 +87,10 @@ class LLMFarmAgent:
         
         try:
             result = await self.agent.run(prompt)
-            logger.info(f"✓ Agent completed successfully, response length: {len(result.data) if result.data else 0}")
-            return result.data
+            # AgentRunResult returns the output directly, not via .data
+            output = str(result.output) if hasattr(result, 'output') else str(result)
+            logger.info(f"✓ Agent completed successfully, response length: {len(output)}")
+            return output
         except Exception as e:
             logger.error("=" * 80)
             logger.error("ERROR DETAILS:")
