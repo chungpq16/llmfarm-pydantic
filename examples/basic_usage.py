@@ -60,7 +60,8 @@ async def basic_chat_example():
 provider = create_bosch_farm_provider()
 
 # Create a chat model with the provider
-model = OpenAIChatModel('gpt-4o-mini', provider=provider)
+# IMPORTANT: Use provider.deployment_name, not 'gpt-4o-mini'
+model = OpenAIChatModel(provider.deployment_name, provider=provider)
 
 # Create an agent
 agent = Agent(model)
@@ -77,8 +78,10 @@ print(result.output)
         print(f"✅ Created provider: {provider}")
         
         # Create a chat model with the provider
-        model = OpenAIChatModel('gpt-4o-mini', provider=provider)
-        print(f"✅ Created model with base URL: {provider.base_url}")
+        # Use the deployment name from the provider, not the generic model name
+        model = OpenAIChatModel(provider.deployment_name, provider=provider)
+        print(f"✅ Created model with deployment: {provider.deployment_name}")
+        print(f"✅ Using base URL: {provider.base_url}")
         
         # Create an agent
         agent = Agent(model)
@@ -108,7 +111,8 @@ async def advanced_provider_example():
         print(f"   Extra query params: {provider.get_extra_query()}")
         
         if PYDANTIC_AI_AVAILABLE:
-            model = OpenAIChatModel('gpt-4o-mini', provider=provider)
+            # Use deployment name from provider
+            model = OpenAIChatModel(provider.deployment_name, provider=provider)
             agent = Agent(model)
             
             result = await agent.run('What is artificial intelligence?')

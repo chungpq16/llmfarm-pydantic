@@ -115,8 +115,34 @@ class BoschFarmProvider(Provider[AsyncOpenAI]):
     
     @property
     def base_url(self) -> str:
-        """The base URL for the provider API."""
+        """Get the base URL of the client."""
         return str(self._client.base_url)
+    
+    @property
+    def deployment_name(self) -> str:
+        """
+        Extract the Azure OpenAI deployment name from the base URL.
+        
+        For Azure OpenAI deployments, the model parameter should be the deployment name,
+        not the underlying OpenAI model name (e.g., 'gpt-4o-mini').
+        
+        Returns:
+            The deployment name extracted from the URL, or 'gpt-4o-mini' as fallback.
+        """
+        try:
+            # Parse URL like: https://aoai-farm.bosch-temp.com/api/openai/deployments/DEPLOYMENT_NAME/...
+            url_parts = self.config.base_url.split('/')
+            deployments_index = url_parts.index('deployments')
+            if deployments_index + 1 < len(url_parts):
+                deployment_name = url_parts[deployments_index + 1]
+                logger.debug(f"Extracted deployment name: {deployment_name}")
+                return deployment_name
+        except (ValueError, IndexError) as e:
+            logger.warning(f"Could not extract deployment name from URL: {e}")
+        
+        # Fallback to default model
+        logger.warning(f"Using fallback model name: {self.config.default_model}")
+        return self.config.default_model
     
     @property
     def client(self) -> AsyncOpenAI:
